@@ -28,3 +28,4 @@ class ProjectSerializer(serializers.ModelSerializer):
 class ApplyHackathonSerializer(serializers.Serializer):
     project_id = serializers.IntegerField()
     hackathon_id = serializers.IntegerField()
+    # 

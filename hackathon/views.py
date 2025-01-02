@@ -5,13 +5,11 @@ from rest_framework.views import APIView
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from .models import Hackathon, Project, ProjectHackathon
-from .serializers import HackathonSerializer, ProjectSerializer
+from .serializers import HackathonSerializer, ProjectSerializer, ApplyHackathonSerializer
 from django.utils.timezone import now
 from django.db import IntegrityError
 from rest_framework.exceptions import ValidationError
 from rest_framework import viewsets
-from .models import Project
-from .serializers import ProjectSerializer
 from .tasks import send_email_task
 
 class HackathonViewSet(viewsets.ModelViewSet):
@@ -33,7 +31,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
     permission_classes = [permissions.IsAuthenticated]
-
+    
     def get_queryset(self):
         # 返回当前用户创建的项目
         return self.queryset.filter(user=self.request.user)
@@ -49,10 +47,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
 class ApplyToHackathonView(APIView):
     def post(self, request, *args, **kwargs):
-        project_id = request.data.get('project_id')
-        hackathon_id = request.data.get('hackathon_id')
-
-        # 验证 Project 是否属于当前用户
+        serializer = ApplyHackathonSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        project_id = serializer.validated_data.get('project_id')
+        hackathon_id = serializer.validated_data.get('hackathon_id')
+        # 验证 Project 是否属于当前用户 
+        # 要特别注意的地方 归属权做强制性的校验
+        # 数据格式做校验  不符合参数规范
+        # 验证是否为空值，如果是空的话，返回400+相应的提示
+        # 数据结构不符合要求 返回400+相应的提示
         project = get_object_or_404(Project, id=project_id, user=request.user)
         hackathon = get_object_or_404(Hackathon, id=hackathon_id)
 
